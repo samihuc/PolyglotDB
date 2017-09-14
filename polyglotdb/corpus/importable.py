@@ -61,8 +61,7 @@ class ImportContext(StructuredContext):
             session.write_transaction(corpus_index)
             session.write_transaction(discourse_index)
             session.write_transaction(speaker_index)
-            self.execute_cypher('''MERGE (n:Corpus {{name: '{}'}}) return n'''.format(self.corpus_name))
-            #session.write_transaction(corpus_create, self.corpus_name)
+            session.write_transaction(corpus_create, self.corpus_name)
 
     def finalize_import(self, data, call_back=None, stop_check=None):
         """ generates hierarchy and saves variables"""
@@ -84,31 +83,20 @@ class ImportContext(StructuredContext):
         log.info('Begin adding discourse {}...'.format(data.name))
         begin = time.time()
 
-        # def create_speaker_discourse(tx, speaker_name, discourse_name, channel):
-        #     tx.run('''MERGE (n:Speaker:{corpus_name} {{name: $speaker_name}})
-        #                 MERGE (d:Discourse:{corpus_name} {{name: $discourse_name}})
-        #                  MERGE (n)-[r:speaks_in]->(d)
-        #                 WITH r
-        #                 SET r.channel = $channel'''.format(corpus_name=self.cypher_safe_name),
-        #            speaker_name=speaker_name, discourse_name=discourse_name, channel=channel)
-        #
-        # with self.graph_driver.session() as session:
-        #     for s in data.speakers:
-        #         if s in data.speaker_channel_mapping:
-        #             session.write_transaction(create_speaker_discourse, s, data.name, data.speaker_channel_mapping[s])
-        #         else:
-        #             session.write_transaction(create_speaker_discourse, s, data.name, 0)
-        self.execute_cypher(
-            '''MERGE (n:Discourse:{corpus_name} {{name: {{discourse_name}}}})'''.format(
-                corpus_name=self.cypher_safe_name),
-            discourse_name=data.name)
-        for s in data.speakers:
-            self.execute_cypher(
-                '''MERGE (n:Speaker:{corpus_name} {{name: {{speaker_name}}}})'''.format(
-                    corpus_name=self.cypher_safe_name),
-                speaker_name=s)
-        # end of changed portion
+        def create_speaker_discourse(tx, speaker_name, discourse_name, channel):
+            tx.run('''MERGE (n:Speaker:{corpus_name} {{name: $speaker_name}})
+                        MERGE (d:Discourse:{corpus_name} {{name: $discourse_name}})
+                         MERGE (n)-[r:speaks_in]->(d)
+                        WITH r
+                        SET r.channel = $channel'''.format(corpus_name=self.cypher_safe_name),
+                   speaker_name=speaker_name, discourse_name=discourse_name, channel=channel)
 
+        with self.graph_driver.session() as session:
+            for s in data.speakers:
+                if s in data.speaker_channel_mapping:
+                    session.write_transaction(create_speaker_discourse, s, data.name, data.speaker_channel_mapping[s])
+                else:
+                    session.write_transaction(create_speaker_discourse, s, data.name, 0)
         data.corpus_name = self.corpus_name
         data_to_graph_csvs(self, data)
         self.hierarchy.update(data.hierarchy)
@@ -222,8 +210,9 @@ class ImportContext(StructuredContext):
                 type_headers = information['type_headers']
                 token_headers = information['token_headers']
                 subannotations = information['subannotations']
-            except ParseError as e:
-                print(e)
+            except ParseError:
+                print (t)
+                raise
                 continue
             for k, v in information['types'].items():
                 types[k].update(v)

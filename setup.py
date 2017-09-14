@@ -13,7 +13,7 @@ class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = ['--strict', '--verbose', '--tb=long', 'tests', '-x']
-        #if os.environ.get('TRAVIS', False):
+        # if os.environ.get('TRAVIS', False):
         #    self.test_args.insert(0, '--skipacoustics')
         self.test_suite = True
 
@@ -26,13 +26,15 @@ class PyTest(TestCommand):
 
 if __name__ == '__main__':
     setup(name='polyglotdb',
-          version='0.0.1',
+          version='0.0.2',
           description='',
-          long_description='',
+          long_description=readme(),
           classifiers=[
               'Development Status :: 3 - Alpha',
               'Programming Language :: Python',
               'Programming Language :: Python :: 3',
+              'Intended Audience :: Science/Research',
+              'License :: OSI Approved :: MIT License',
               'Operating System :: OS Independent',
               'Topic :: Scientific/Engineering',
               'Topic :: Text Processing :: Linguistic',
@@ -43,6 +45,9 @@ if __name__ == '__main__':
           author_email='michael.e.mcauliffe@gmail.com',
           packages=['polyglotdb',
                     'polyglotdb.acoustics',
+                    'polyglotdb.acoustics.formants',
+                    'polyglotdb.acoustics.pitch',
+                    'polyglotdb.client',
                     'polyglotdb.corpus',
                     'polyglotdb.io',
                     'polyglotdb.io.types',
